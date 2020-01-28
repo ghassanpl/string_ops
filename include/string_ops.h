@@ -56,6 +56,11 @@ namespace string_ops
 	constexpr basic_string_view<T> make_sv(IT start, IT end) noexcept { return basic_string_view<T>{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
 
 	template <typename T>
+	constexpr std::basic_string<T> make_string(const T* start, const T* end) noexcept { return std::basic_string<T>{ start, static_cast<size_t>(end - start) }; }
+	template <CONCEPT(std::contiguous_iterator) IT, typename T = typename std::iterator_traits<IT>::value_type>
+	constexpr std::basic_string<T> make_string(IT start, IT end) noexcept { return std::basic_string<T>{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
+
+	template <typename T>
 	basic_string_view<T> trim_whitespace_right(basic_string_view<T> str) noexcept { return make_sv(str.begin(), std::find_if_not(str.rbegin(), str.rend(), ::string_ops::isspace).base()); }
 	template <typename T>
 	basic_string_view<T> trim_whitespace_left(basic_string_view<T> str) noexcept { return make_sv(std::find_if_not(str.begin(), str.end(), ::string_ops::isspace), str.end()); }
@@ -150,3 +155,7 @@ namespace string_ops
 	}
 
 }
+
+#undef concept
+#undef requires
+#undef CONCEPT
