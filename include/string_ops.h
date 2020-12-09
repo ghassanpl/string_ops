@@ -22,42 +22,57 @@ namespace ghassanpl::string_ops
 	/// ASCII functions
 	/// ///////////////////////////// ///
 
-	/// Our own functions that do not block, are defined for values outside of uint8_t, and do not depend on locale
-	[[nodiscard]] inline constexpr bool isalpha(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z') || (cp >= 'a' && cp <= 'z'); }
-	[[nodiscard]] inline constexpr bool isdigit(char32_t d)  noexcept { return d >= '0' && d <= '9'; }
-	[[nodiscard]] inline constexpr bool isxdigit(char32_t d) noexcept { return (d >= '0' && d <= '9') || (d >= 'A' && d <= 'F') || (d >= 'a' && d <= 'f'); }
-	[[nodiscard]] inline constexpr bool isalnum(char32_t cp) noexcept { return ::ghassanpl::string_ops::isdigit(cp) || ::ghassanpl::string_ops::isalpha(cp); }
-	[[nodiscard]] inline constexpr bool isident(char32_t cp) noexcept { return ::ghassanpl::string_ops::isdigit(cp) || ::ghassanpl::string_ops::isalpha(cp) || cp == '_'; }
-	[[nodiscard]] inline constexpr bool isspace(char32_t d)  noexcept { return d == ' ' || d == '\t' || d == '\n' || d == '\v' || d == '\r' || d == '\f'; }
-	[[nodiscard]] inline constexpr bool ispunct(char32_t d)  noexcept { return (d >= 33 && d <= 47) || (d >= 58 && d <= 64) || (d >= 91 && d <= 96) || (d >= 123 && d <= 126); }
-	[[nodiscard]] inline constexpr bool islower(char32_t cp) noexcept { return (cp >= 'a' && cp <= 'z'); }
-	[[nodiscard]] inline constexpr bool isupper(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z'); }
-	[[nodiscard]] inline constexpr bool iscntrl(char32_t cp) noexcept { return cp == 0x7F || cp < 0x20; }
-	[[nodiscard]] inline constexpr bool isblank(char32_t cp) noexcept { return cp == ' ' || cp == '\t'; }
-	[[nodiscard]] inline constexpr bool isgraph(char32_t cp) noexcept { return ::ghassanpl::string_ops::isalnum(cp) || ::ghassanpl::string_ops::ispunct(cp); }
-	[[nodiscard]] inline constexpr bool isprint(char32_t cp) noexcept { return ::ghassanpl::string_ops::isgraph(cp) || cp == ' '; }
-
-	[[nodiscard]] inline constexpr char32_t toupper(char32_t cp) noexcept { return (cp >= 'a' && cp <= 'z') ? (cp ^ 0b100000) : cp; }
-	[[nodiscard]] inline constexpr char32_t tolower(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z') ? (cp | 0b100000) : cp; }
-
-	template <character T>
-	[[nodiscard]] inline constexpr T toupper(T cp) noexcept { return (cp >= 'a' && cp <= 'z') ? (cp ^ 0b100000) : cp; }
-	template <character T>
-	[[nodiscard]] inline constexpr T tolower(T cp) noexcept { return (cp >= 'A' && cp <= 'Z') ? (cp | 0b100000) : cp; }
-
-	[[nodiscard]] inline constexpr char32_t todigit(int v) noexcept { return char32_t(v) + U'0'; }
-	[[nodiscard]] inline constexpr char32_t toxdigit(int v) noexcept { return (v > 9) ? (char32_t(v - 10) + U'A') : (char32_t(v) + U'0'); }
-
-	template <character T>
-	[[nodiscard]] constexpr bool strings_equal_ignore_case(basic_string_view<T> a, basic_string_view<T> b)
+	namespace ascii
 	{
-		return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](T a, T b) { return toupper(a) == toupper(b); });
-	}
 
-	template <character T>
-	[[nodiscard]] constexpr bool lexicographical_compare_ignore_case(basic_string_view<T> a, basic_string_view<T> b)
-	{
-		return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](T a, T b) { return toupper(a) == toupper(b); });
+		/// Our own functions that do not block, are defined for values outside of uint8_t, and do not depend on locale
+		[[nodiscard]] inline constexpr bool isalpha(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z') || (cp >= 'a' && cp <= 'z'); }
+		[[nodiscard]] inline constexpr bool isdigit(char32_t d)  noexcept { return d >= '0' && d <= '9'; }
+		[[nodiscard]] inline constexpr bool isxdigit(char32_t d) noexcept { return (d >= '0' && d <= '9') || (d >= 'A' && d <= 'F') || (d >= 'a' && d <= 'f'); }
+		[[nodiscard]] inline constexpr bool isalnum(char32_t cp) noexcept { return ::ghassanpl::string_ops::ascii::isdigit(cp) || ::ghassanpl::string_ops::ascii::isalpha(cp); }
+		[[nodiscard]] inline constexpr bool isident(char32_t cp) noexcept { return ::ghassanpl::string_ops::ascii::isdigit(cp) || ::ghassanpl::string_ops::ascii::isalpha(cp) || cp == '_'; }
+		[[nodiscard]] inline constexpr bool isspace(char32_t d)  noexcept { return d == ' ' || d == '\t' || d == '\n' || d == '\v' || d == '\r' || d == '\f'; }
+		[[nodiscard]] inline constexpr bool ispunct(char32_t d)  noexcept { return (d >= 33 && d <= 47) || (d >= 58 && d <= 64) || (d >= 91 && d <= 96) || (d >= 123 && d <= 126); }
+		[[nodiscard]] inline constexpr bool islower(char32_t cp) noexcept { return (cp >= 'a' && cp <= 'z'); }
+		[[nodiscard]] inline constexpr bool isupper(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z'); }
+		[[nodiscard]] inline constexpr bool iscntrl(char32_t cp) noexcept { return cp == 0x7F || cp < 0x20; }
+		[[nodiscard]] inline constexpr bool isblank(char32_t cp) noexcept { return cp == ' ' || cp == '\t'; }
+		[[nodiscard]] inline constexpr bool isgraph(char32_t cp) noexcept { return ::ghassanpl::string_ops::ascii::isalnum(cp) || ::ghassanpl::string_ops::ascii::ispunct(cp); }
+		[[nodiscard]] inline constexpr bool isprint(char32_t cp) noexcept { return ::ghassanpl::string_ops::ascii::isgraph(cp) || cp == ' '; }
+
+		[[nodiscard]] inline constexpr char32_t toupper(char32_t cp) noexcept { return (cp >= 'a' && cp <= 'z') ? (cp ^ 0b100000) : cp; }
+		[[nodiscard]] inline constexpr char32_t tolower(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z') ? (cp | 0b100000) : cp; }
+
+		template <character T>
+		[[nodiscard]] inline constexpr T toupper(T cp) noexcept { return (cp >= 'a' && cp <= 'z') ? (cp ^ 0b100000) : cp; }
+		template <character T>
+		[[nodiscard]] inline constexpr T tolower(T cp) noexcept { return (cp >= 'A' && cp <= 'Z') ? (cp | 0b100000) : cp; }
+
+		template <character T>
+		[[nodiscard]] inline constexpr std::basic_string<T> tolower(std::basic_string<T>&& str) noexcept { std::for_each(str.begin(), str.end(), [](T& cp) { cp = tolower(cp); }); return str; }
+		template <character T>
+		[[nodiscard]] inline constexpr std::basic_string<T> tolower(basic_string_view<T> str) noexcept { return tolower(std::basic_string<T>{str}); }
+
+		template <character T>
+		[[nodiscard]] inline constexpr std::basic_string<T> toupper(std::basic_string<T>&& str) noexcept { std::for_each(str.begin(), str.end(), [](T& cp) { cp = toupper(cp); }); return str; }
+		template <character T>
+		[[nodiscard]] inline constexpr std::basic_string<T> toupper(basic_string_view<T> str) noexcept { return toupper(std::basic_string<T>{str}); }
+
+		[[nodiscard]] inline constexpr char32_t todigit(int v) noexcept { return char32_t(v) + U'0'; }
+		[[nodiscard]] inline constexpr char32_t toxdigit(int v) noexcept { return (v > 9) ? (char32_t(v - 10) + U'A') : (char32_t(v) + U'0'); }
+
+		template <character T>
+		[[nodiscard]] constexpr bool strings_equal_ignore_case(basic_string_view<T> a, basic_string_view<T> b)
+		{
+			return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](T a, T b) { return toupper(a) == toupper(b); });
+		}
+
+		template <character T>
+		[[nodiscard]] constexpr bool lexicographical_compare_ignore_case(basic_string_view<T> a, basic_string_view<T> b)
+		{
+			return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), [](T a, T b) { return toupper(a) == toupper(b); });
+		}
+
 	}
 
 	template <character T>
@@ -71,9 +86,9 @@ namespace ghassanpl::string_ops
 	[[nodiscard]] constexpr std::basic_string<T> make_string(IT start, IT end) noexcept { return std::basic_string<T>{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
 
 	template <character T>
-	[[nodiscard]] basic_string_view<T> trimmed_whitespace_right(basic_string_view<T> str) noexcept { return make_sv(str.begin(), std::find_if_not(str.rbegin(), str.rend(), ::ghassanpl::string_ops::isspace).base()); }
+	[[nodiscard]] basic_string_view<T> trimmed_whitespace_right(basic_string_view<T> str) noexcept { return make_sv(str.begin(), std::find_if_not(str.rbegin(), str.rend(), ::ghassanpl::string_ops::ascii::isspace).base()); }
 	template <character T>
-	[[nodiscard]] basic_string_view<T> trimmed_whitespace_left(basic_string_view<T> str) noexcept { return make_sv(std::find_if_not(str.begin(), str.end(), ::ghassanpl::string_ops::isspace), str.end()); }
+	[[nodiscard]] basic_string_view<T> trimmed_whitespace_left(basic_string_view<T> str) noexcept { return make_sv(std::find_if_not(str.begin(), str.end(), ::ghassanpl::string_ops::ascii::isspace), str.end()); }
 	template <character T>
 	[[nodiscard]] basic_string_view<T> trimmed_whitespace(basic_string_view<T> str) noexcept { return trimmed_whitespace_left(trimmed_whitespace_right(str)); }
 	template <character T>
@@ -152,9 +167,16 @@ namespace ghassanpl::string_ops
 	}
 
 
+	template <character T, size_t N>
+	bool consume(basic_string_view<T>& str, T(&val)[N])
+	{
+		return consume(str, basic_string_view<T>{val});
+	}
+
+
 	template <character T, typename FUNC>
 	requires std::invocable<FUNC, T>
-	basic_string_view<T> consume_while(basic_string_view<T>& str, FUNC&& pred)
+		basic_string_view<T> consume_while(basic_string_view<T>& str, FUNC&& pred)
 	{
 		const auto start = str.begin();
 		while (!str.empty() && pred(str[0]))
@@ -267,20 +289,20 @@ namespace ghassanpl::string_ops
 			buffer += static_cast<char>(cp);
 			return 1;
 		}
-		else if (cp < 0x800) 
+		else if (cp < 0x800)
 		{
 			buffer += static_cast<char>((cp >> 6) | 0xc0);
 			buffer += static_cast<char>((cp & 0x3f) | 0x80);
 			return 2;
 		}
-		else if (cp < 0x10000) 
+		else if (cp < 0x10000)
 		{
 			buffer += static_cast<char>((cp >> 12) | 0xe0);
 			buffer += static_cast<char>(((cp >> 6) & 0x3f) | 0x80);
 			buffer += static_cast<char>((cp & 0x3f) | 0x80);
 			return 3;
 		}
-		else 
+		else
 		{
 			buffer += static_cast<char>((cp >> 18) | 0xf0);
 			buffer += static_cast<char>(((cp >> 12) & 0x3f) | 0x80);
