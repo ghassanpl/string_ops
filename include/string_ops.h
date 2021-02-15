@@ -16,7 +16,7 @@ namespace ghassanpl::string_ops
 	using std::string_view;
 
 	template <typename T>
-	concept character = requires { std::char_traits<T>; };
+	concept character = requires { typename std::char_traits<T>; };
 
 	/// ///////////////////////////// ///
 	/// ASCII functions
@@ -209,7 +209,7 @@ namespace ghassanpl::string_ops
 		while ((next = source.find_first_of(delim)) != std::string::npos)
 		{
 			func(source.substr(0, next), false);
-			source.remove_prefix(next);
+			source.remove_prefix(next + 1);
 		}
 		func(source, true);
 	}
@@ -221,12 +221,12 @@ namespace ghassanpl::string_ops
 		while ((next = source.find_first_of(delim)) != std::string::npos)
 		{
 			func(source.substr(0, next), false);
-			source.remove_prefix(next);
+			source.remove_prefix(next + 1);
 
 			if ((next = source.find_first_not_of(delim)) == std::string::npos)
 				return;
 
-			source.remove_prefix(next);
+			source.remove_prefix(next + 1);
 		}
 
 		if (!source.empty())
