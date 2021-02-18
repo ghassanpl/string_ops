@@ -16,7 +16,25 @@ namespace ghassanpl::string_ops
 	using std::string_view;
 
 	template <typename T>
-	concept character = requires { typename std::char_traits<T>; };
+	concept character = std::same_as<char, std::remove_cv_t<T>> || std::same_as<wchar_t, std::remove_cv_t<T>> || std::same_as<char8_t, std::remove_cv_t<T>> || std::same_as<char16_t, std::remove_cv_t<T>> || std::same_as<char32_t, std::remove_cv_t<T>>;
+
+	namespace detail
+	{
+		template <typename T>
+		requires std::ranges::range<T>
+		auto deduce_char() { using std::begin; return typename std::iterator_traits<decltype(begin(T{}))>::value_type{}; }
+
+		template <typename T>
+		requires character<T>
+		auto deduce_char() { return T{}; }
+
+		template <typename T>
+		requires std::is_pointer_v<T> && character<typename std::pointer_traits<T>::element_type>
+		auto deduce_char() { return std::remove_cv_t<typename std::pointer_traits<T>::element_type>{}; }
+
+		template <typename T>
+		using deduce_char_t = decltype(deduce_char<std::decay_t<T>>());
+	}
 
 	/// ///////////////////////////// ///
 	/// ASCII functions
@@ -172,11 +190,45 @@ namespace ghassanpl::string_ops
 	{
 		return consume(str, basic_string_view<T>{val});
 	}
+	
+	template <character T>
+	bool consume_at_end(basic_string_view<T>& str, T val)
+	{
+		if (str.ends_with(val))
+		{
+			str.remove_prefix(1);
+			return true;
+		}
+		return false;
+	}
 
+	template <character T>
+	bool consume_at_end(basic_string_view<T>& str, basic_string_view<T> val)
+	{
+		if (str.ends_with(val))
+		{
+			str.remove_suffix(val.size());
+			return true;
+		}
+		return false;
+	}
+
+	template <character T>
+	bool consume_at_end(basic_string_view<T>& str, T const* val)
+	{
+		return consume_at_end(str, basic_string_view<T>{val});
+	}
+
+
+	template <character T, size_t N>
+	bool consume_at_end(basic_string_view<T>& str, T(&val)[N])
+	{
+		return consume_at_end(str, basic_string_view<T>{val});
+	}
 
 	template <character T, typename FUNC>
 	requires std::invocable<FUNC, T>
-		basic_string_view<T> consume_while(basic_string_view<T>& str, FUNC&& pred)
+	basic_string_view<T> consume_while(basic_string_view<T>& str, FUNC&& pred)
 	{
 		const auto start = str.begin();
 		while (!str.empty() && pred(str[0]))
@@ -202,8 +254,8 @@ namespace ghassanpl::string_ops
 		return make_sv(start, str.begin());
 	}
 
-	template <character T, typename FUNC>
-	void split(basic_string_view<T> source, basic_string_view<T> delim, FUNC&& func) noexcept
+	template <character T, typename DELIM, typename FUNC>
+	void split(basic_string_view<T> source, DELIM&& delim, FUNC&& func) noexcept
 	{
 		size_t next = 0;
 		while ((next = source.find_first_of(delim)) != std::string::npos)
@@ -214,8 +266,8 @@ namespace ghassanpl::string_ops
 		func(source, true);
 	}
 
-	template <character T, typename FUNC>
-	void natural_split(basic_string_view<T> source, basic_string_view<T> delim, FUNC&& func) noexcept
+	template <character T, typename DELIM, typename FUNC>
+	void natural_split(basic_string_view<T> source, DELIM&& delim, FUNC&& func) noexcept
 	{
 		size_t next = 0;
 		while ((next = source.find_first_of(delim)) != std::string::npos)
@@ -233,53 +285,76 @@ namespace ghassanpl::string_ops
 			func(source, true);
 	}
 
-	template <character T>
-	[[nodiscard]] std::vector<basic_string_view<T>> split(basic_string_view<T> source, basic_string_view<T> delim) noexcept
+	template <character T, typename DELIM>
+	[[nodiscard]] std::vector<basic_string_view<T>> split(basic_string_view<T> source, DELIM&& delim) noexcept
 	{
 		std::vector<basic_string_view<T>> result;
-		::ghassanpl::string_ops::split(source, delim, [&](basic_string_view<T> str, bool last) {
+		::ghassanpl::string_ops::split(source, forward<DELIM>(delim), [&](basic_string_view<T> str, bool last) {
 			result.push_back(str);
 		});
 		return result;
 	}
 
-	template <character T>
-	[[nodiscard]] std::vector<basic_string_view<T>> natural_split(basic_string_view<T> source, basic_string_view<T> delim) noexcept
+	template <character T, typename DELIM>
+	[[nodiscard]] std::vector<basic_string_view<T>> natural_split(basic_string_view<T> source, DELIM&& delim) noexcept
 	{
 		std::vector<basic_string_view<T>> result;
-		::ghassanpl::string_ops::natural_split(source, delim, [&](basic_string_view<T> str, bool last) {
+		::ghassanpl::string_ops::natural_split(source, forward<DELIM>(delim), [&](basic_string_view<T> str, bool last) {
 			result.push_back(str);
 		});
 		return result;
 	}
 
-	template <std::ranges::range T, character CHAR_T>
-	[[nodiscard]] std::basic_string<CHAR_T> join(T&& source, basic_string_view<CHAR_T> delim)
+	template <std::ranges::range T, typename DELIM>
+	[[nodiscard]] auto join(T&& source, DELIM&& delim)
 	{
+		using CHAR_T = detail::deduce_char_t<std::decay_t<DELIM>>;
 		std::basic_stringstream<CHAR_T> strm;
 		bool first = true;
 		for (auto&& p : std::forward<T>(source))
 		{
-			if (!first) strm << delim;
+			if (!first) strm << forward<DELIM>(delim);
 			strm << p;
 			first = false;
 		}
 		return strm.str();
 	}
 
-	template <std::ranges::range T, typename FUNC, character CHAR_T>
-	[[nodiscard]] std::basic_string<CHAR_T> join(T&& source, basic_string_view<CHAR_T> delim, FUNC&& transform_func)
+	template <std::ranges::range T, typename FUNC, typename DELIM>
+	[[nodiscard]] auto join(T&& source, DELIM&& delim, FUNC&& transform_func)
 	{
+		using CHAR_T = detail::deduce_char_t<std::decay_t<DELIM>>;
 		std::basic_stringstream<CHAR_T> strm;
 		bool first = true;
 		for (auto&& p : source)
 		{
-			if (!first) strm << delim;
+			if (!first) strm << forward<DELIM>(delim);
 			strm << transform_func(p);
 			first = false;
 		}
 		return strm.str();
 	}
+
+	template <character T, typename NEEDLE, typename REPLACE>
+	void replace(std::basic_string<T>& subject, NEEDLE&& search, REPLACE&& replace)
+	{
+		using std::empty;
+		using std::size;
+
+		if (std::basic_string_view<T>{ search }.empty())
+			return;
+
+		const auto search_size = std::basic_string_view<T>{ search }.size();
+		const auto replace_size = std::basic_string_view<T>{ replace }.size();
+
+		size_t pos = 0;
+		while ((pos = subject.find(search, pos)) != std::string::npos)
+		{
+			subject.replace(pos, search_size, replace);
+			pos += replace_size;
+		}
+	}
+
 
 	/// Assuming codepoint is valid
 	inline size_t append_utf8(std::string& buffer, char32_t cp)
