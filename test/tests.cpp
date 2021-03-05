@@ -5,10 +5,10 @@
 
 #define FMT_USE_WINDOWS_H 0
 #define FMT_HEADER_ONLY 1
-#include "../include/string_ops.h"
+#include "../include/string_ops2.h"
 #include <gtest/gtest.h>
 
-using namespace string_ops;
+using namespace ghassanpl::string_ops;
 
 TEST(isalpha, works_for_all_ascii)
 {
@@ -19,6 +19,7 @@ TEST(make_sv, works_for_general_case)
 {
 
 }
+
 TEST(make_sv, works_for_nulls)
 {
 
@@ -26,7 +27,7 @@ TEST(make_sv, works_for_nulls)
 TEST(make_sv, fails_for_invalid_range)
 {
   std::string hello = "hello";
-  EXPECT_EQ(make_sv(hello.end(), hello.begin()), "hello");
+  EXPECT_EQ(make_sv(hello.end(), hello.begin()), "");
 }
 
 int main(int argc, char** argv)
