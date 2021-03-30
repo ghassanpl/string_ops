@@ -39,10 +39,10 @@ namespace ghassanpl::string_ops
 		[[nodiscard]] inline constexpr char32_t toupper(char32_t cp) noexcept { return (cp >= 'a' && cp <= 'z') ? (cp ^ 0b100000) : cp; }
 		[[nodiscard]] inline constexpr char32_t tolower(char32_t cp) noexcept { return (cp >= 'A' && cp <= 'Z') ? (cp | 0b100000) : cp; }
 
-		[[nodiscard]] inline std::string tolower(std::string&& str) noexcept { std::for_each(str.begin(), str.end(), [](char& cp) { cp = (char)tolower(cp); }); return str; }
+		[[nodiscard]] inline std::string tolower(std::string str) noexcept { std::for_each(str.begin(), str.end(), [](char& cp) { cp = (char)tolower(cp); }); return str; }
 		[[nodiscard]] inline std::string tolower(std::string_view str) noexcept { return tolower(std::string{str}); }
 
-		[[nodiscard]] inline std::string toupper(std::string&& str) noexcept { std::for_each(str.begin(), str.end(), [](char& cp) { cp = (char)toupper(cp); }); return str; }
+		[[nodiscard]] inline std::string toupper(std::string str) noexcept { std::for_each(str.begin(), str.end(), [](char& cp) { cp = (char)toupper(cp); }); return str; }
 		[[nodiscard]] inline std::string toupper(string_view str) noexcept { return toupper(std::string{str}); }
 
 		[[nodiscard]] inline constexpr char32_t todigit(int v) noexcept { return char32_t(v) + U'0'; }
@@ -66,11 +66,14 @@ namespace ghassanpl::string_ops
 
 	[[nodiscard]] inline constexpr string_view make_sv(const char* start, const char* end) noexcept { return string_view{ start, static_cast<size_t>(end - start) }; }
 	template <std::contiguous_iterator IT, typename T = typename std::iterator_traits<IT>::value_type>
-	[[nodiscard]] inline constexpr string_view make_sv(IT start, IT end) noexcept { return string_view{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
+	[[nodiscard]] inline constexpr string_view make_sv(IT start, IT end) { return string_view{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
 
-	[[nodiscard]] inline std::string make_string(const char* start, const char* end) noexcept { return std::string{ start, static_cast<size_t>(end - start) }; }
+	[[nodiscard]] inline std::string make_string(const char* start, const char* end) { return std::string{ start, static_cast<size_t>(end - start) }; }
 	template <std::contiguous_iterator IT, typename T = typename std::iterator_traits<IT>::value_type>
-	[[nodiscard]] inline std::string make_string(IT start, IT end) noexcept { return std::string{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
+	[[nodiscard]] inline std::string make_string(IT start, IT end) { return std::string{ std::to_address(start), static_cast<size_t>(std::distance(std::to_address(start), std::to_address(end))) }; }
+
+	/// for predicates
+	[[nodiscard]] inline std::string to_string(string_view from) noexcept { return std::string{ from }; }
 
 	/// ///////////////////////////// ///
 	/// Trims
@@ -191,12 +194,12 @@ namespace ghassanpl::string_ops
 		return make_sv(start, str.begin());
 	}
 
-	inline pair<string_view, double> consume_c_float(string_view& str)
+	inline std::pair<string_view, double> consume_c_float(string_view& str)
 	{
 		if (str.empty() || !(ascii::isdigit(str[0]) || str[0] == '-'))
 			return {};
 
-		pair<string_view, double> result;
+		std::pair<string_view, double> result;
 
 		auto from_chars_result = std::from_chars(str.data(), str.data() + str.size(), result.second);
 		if (from_chars_result.ec != std::errc{})
@@ -207,12 +210,12 @@ namespace ghassanpl::string_ops
 		return result;
 	}
 
-	inline pair<string_view, int64_t> consume_c_integer(string_view& str, int base = 10)
+	inline std::pair<string_view, int64_t> consume_c_integer(string_view& str, int base = 10)
 	{
 		if (str.empty() || !(ascii::isdigit(str[0]) || str[0] == '-'))
 			return {};
 
-		pair<string_view, int64_t> result;
+		std::pair<string_view, int64_t> result;
 
 		auto from_chars_result = std::from_chars(str.data(), str.data() + str.size(), result.second, base);
 		if (from_chars_result.ec != std::errc{})
@@ -225,12 +228,12 @@ namespace ghassanpl::string_ops
 
 	size_t append_utf8(std::string& buffer, char32_t cp);
 
-	inline pair<string_view, std::string> consume_c_string(string_view& strv)
+	inline std::pair<string_view, std::string> consume_c_string(string_view& strv)
 	{
 		if (strv.empty() || strv[0] != '"')
 			return {};
 
-		pair<string_view, std::string> result;
+		std::pair<string_view, std::string> result;
 
 		auto view = strv;
 		auto start = view.begin();
@@ -240,8 +243,6 @@ namespace ghassanpl::string_ops
 			auto cp = consume(view);
 			if (cp == '\\')
 			{
-				auto escape_start = view.begin();
-
 				cp = consume(view);
 				if (view.empty())
 					return {}; /// Unterminated string literal
@@ -322,6 +323,9 @@ namespace ghassanpl::string_ops
 		strv = view;
 		return result;
 	}
+
+	/// TODO: this 
+	void consume_c_literal(string_view& str);
 
 	/// ///////////////////////////// ///
 	/// Basic UTF-8 stuff
@@ -418,7 +422,7 @@ namespace ghassanpl::string_ops
 			if ((next = source.find_first_not_of(delim)) == std::string::npos)
 				return;
 
-			source.remove_prefix(next + 1);
+			source.remove_prefix(next);
 		}
 
 		if (!source.empty())
@@ -429,7 +433,7 @@ namespace ghassanpl::string_ops
 	[[nodiscard]] inline std::vector<string_view> split(string_view source, DELIM&& delim) noexcept
 	{
 		std::vector<string_view> result;
-		::ghassanpl::string_ops::split(source, forward<DELIM>(delim), [&result](string_view str, bool last) {
+		::ghassanpl::string_ops::split(source, std::forward<DELIM>(delim), [&result](string_view str, bool last) {
 			result.push_back(str);
 		});
 		return result;
@@ -439,7 +443,7 @@ namespace ghassanpl::string_ops
 	[[nodiscard]] inline std::vector<string_view> natural_split(string_view source, DELIM&& delim) noexcept
 	{
 		std::vector<string_view> result;
-		::ghassanpl::string_ops::natural_split(source, forward<DELIM>(delim), [&result](string_view str, bool last) {
+		::ghassanpl::string_ops::natural_split(source, std::forward<DELIM>(delim), [&result](string_view str, bool last) {
 			result.push_back(str);
 		});
 		return result;
@@ -452,8 +456,34 @@ namespace ghassanpl::string_ops
 		bool first = true;
 		for (auto&& p : std::forward<T>(source))
 		{
-			if (!first) strm << forward<DELIM>(delim);
+			if (!first) strm << delim;
 			strm << p;
+			first = false;
+		}
+		return strm.str();
+	}
+
+	template <std::ranges::range T, typename DELIM, typename LAST_DELIM>
+	[[nodiscard]] inline auto join_and(T&& source, DELIM&& delim, LAST_DELIM&& last_delim)
+	{
+		using std::begin;
+		using std::end;
+		using std::next;
+
+		std::stringstream strm;
+		bool first = true;
+		
+		auto&& endit = end(source);
+		for (auto it = begin(source); it != endit; ++it)
+		{
+			if (!first)
+			{
+				if (next(it) == endit)
+					strm << std::forward<LAST_DELIM>(last_delim);
+				else
+					strm << delim;
+			}
+			strm << *it;
 			first = false;
 		}
 		return strm.str();
@@ -466,7 +496,7 @@ namespace ghassanpl::string_ops
 		bool first = true;
 		for (auto&& p : source)
 		{
-			if (!first) strm << forward<DELIM>(delim);
+			if (!first) strm << delim;
 			strm << transform_func(p);
 			first = false;
 		}
